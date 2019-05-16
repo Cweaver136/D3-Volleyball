@@ -52,10 +52,10 @@
                 <p>Hit Submit!</p>
             </div>
             <form>
-                <label id="originLabel"for="origin">Origin</label>
+                <label id="originLabel" for="origin">Origin</label>
                 <input type="text" id="origin" name="origin" onclick="focus" placeholder="Origin..">
 
-                <label id="destinationLabel"for="destination">Destination</label>
+                <label id="destinationLabel" for="destination">Destination</label>
                 <input type="text" id="destination" name="Destination" placeholder="Destination...">
                 <button type="button" onclick="distance()">Submit</button>
             </form>
@@ -68,15 +68,22 @@
 </html>
 
 <script>
+
     var map;
     var route;
     var routeDisplay;
     var geocoder;
+
+    // variables to keep track of which markerrs are the current origin and destination
+    var originMarker;
+    var destinationMarker;
+
     function initMap() {
         route = new google.maps.DirectionsService();
         geocoder = new google.maps.Geocoder();
         var rendererOptions = {
             preserveViewport: true,
+            suppressMarkers: true,
         }
         routeDisplay = new google.maps.DirectionsRenderer(rendererOptions);
         map = new google.maps.Map(document.getElementById('map'), {
@@ -130,6 +137,7 @@
             var marker = new google.maps.Marker({
                 position: results[0].geometry.location,
                 map: map,
+                icon: `http://maps.google.com/mapfiles/ms/icons/red-dot.png`,
                 title: school.name,
                 address: school.address,
             });
@@ -148,14 +156,33 @@
             marker.addListener('click', function () {
                 // Selecting an origin school
                 if (origin.classList.contains("focused")) {
+                    // Set label on sidebar
                     document.getElementById('originLabel').innerHTML = "Origin - <b>" + marker.title + "</b>";
+
+                    if (!originMarker) {
+                        originMarker = marker;
+                    } else {
+                        originMarker.setIcon(`http://maps.google.com/mapfiles/ms/icons/red-dot.png`)
+                        originMarker = marker;
+                    }
+                    marker.setIcon(`http://www.google.com/mapfiles/markerA.png`);
                     origin.value = marker.address;
                     // document.getElementById('overlay').style.display = "none";
                     origin.classList.remove('focused');
                 }
                 // Selecting a destination school
                 if (destination.classList.contains("focused")) {
+                    // Set label on sidebar                   
                     document.getElementById('destinationLabel').innerHTML = "Destination - <b>" + marker.title + "</b>";
+
+                    if (!destinationMarker) {
+                        destinationMarker = marker;
+                    } else {
+                        destinationMarker.setIcon(`http://maps.google.com/mapfiles/ms/icons/red-dot.png`)
+                        destinationMarker = marker;
+                    }
+
+                    marker.setIcon(`http://www.google.com/mapfiles/markerB.png`);
                     destination.value = marker.address;
                     // document.getElementById('overlay').style.display = "none";
                     destination.classList.remove('focused');
