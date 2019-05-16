@@ -1,0 +1,19 @@
+When a user clicks on a school, have that marker turn a different color to signify it's been chosen.
+
+Put the name of the school by the origin and destination boxes when the marker has been clicked.
+
+Add a radius feature to limit which markers are shown
+
+Add a uniform header on the sidebar
+
+Add more schools
+
+Add the option to set the origin or destination from the label that pops up when you hover over a school
+
+Change markers to logos of schools
+
+Add the ability to orient the map center based on what school you select
+
+Fix logic for selecting schools
+
+Add guided UI when selecting an origin/destination school that makes you pick a marker

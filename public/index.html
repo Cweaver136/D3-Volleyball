@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>D3 Volleyball</title>
+    <meta name="viewport" content="initial-scale=1.0">
+    <meta charset="utf-8">
+
+    <link rel="stylesheet" type="text/css" href="sidebar.css">
+
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <!-- The core Firebase JS SDK is always required and must be listed first -->
+    <script src="https://www.gstatic.com/firebasejs/6.0.2/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/6.0.2/firebase-firestore.js"></script>
+
+    <!-- TODO: Add SDKs for Firebase products that you want to use
+        https://firebase.google.com/docs/web/setup#config-web-app -->
+
+    <script>
+        // Your web app's Firebase configuration
+        var firebaseConfig = {
+            apiKey: "AIzaSyA2snvc6-UOzhFscnzU_765BWv7-V4gkos",
+            authDomain: "d3-volleyball-1557853363533.firebaseapp.com",
+            databaseURL: "https://d3-volleyball-1557853363533.firebaseio.com",
+            projectId: "d3-volleyball-1557853363533",
+            storageBucket: "d3-volleyball-1557853363533.appspot.com",
+            messagingSenderId: "829179547115",
+            appId: "1:829179547115:web:6723962f0fbbcd92"
+        };
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        var db = firebase.firestore();
+    </script>
+</head>
+
+<body>
+    <div id="wrapper">
+        <div id="map"></div>
+        <div class="sidebar">
+            <div class="sidebarHeader">
+                <h2>Hello!</h2>
+                <h3>Instructions</h3>
+            </div>
+            <div class="sidebarInstructions">
+                <h4>Step 1:</h4>
+                <p>Select the box labeled "origin" below and click on a school you want to use as your starting
+                    location.</p>
+                <h4>Step 2:</h4>
+                <p>Select the box labeled "destination" below and click on a school you want to use as your final
+                    destination.</p>
+                <h4>Step 3:</h4>
+                <p>Hit Submit!</p>
+            </div>
+            <form>
+                <label id="originLabel"for="origin">Origin</label>
+                <input type="text" id="origin" name="origin" onclick="focus" placeholder="Origin..">
+
+                <label id="destinationLabel"for="destination">Destination</label>
+                <input type="text" id="destination" name="Destination" placeholder="Destination...">
+                <button type="button" onclick="distance()">Submit</button>
+            </form>
+            <div id="driveTime"></div>
+        </div>
+        <div id="overlay"></div>
+    </div>
+</body>
+
+</html>
+
+<script>
+    var map;
+    var route;
+    var routeDisplay;
+    var geocoder;
+    function initMap() {
+        route = new google.maps.DirectionsService();
+        geocoder = new google.maps.Geocoder();
+        var rendererOptions = {
+            preserveViewport: true,
+        }
+        routeDisplay = new google.maps.DirectionsRenderer(rendererOptions);
+        map = new google.maps.Map(document.getElementById('map'), {
+            center: { lat: 40.157835, lng: -76.988234 },
+            zoom: 8
+        });
+        routeDisplay.setMap(map)
+        setTimeout(function () {
+            for (i = 0; i < schools.length; i++) {
+                makeMarkers(schools[i]);
+            }
+        }, 300);
+
+        let schools = [];
+        let markers = [];
+
+        // get all of the schools within the database
+        db.collection("schools").get().then((querySnapshot) => {
+            querySnapshot.forEach((doc) => {
+
+                school = {
+                    name: `${doc.data().name}`,
+                    mascot: `${doc.data().mascot}`,
+                    lat: parseFloat(`${doc.data().lat}`),
+                    lng: parseFloat(`${doc.data().lng}`),
+                    address: `${doc.data().address}`,
+                    conference: `${doc.data().conference}`,
+                    icon: `${doc.data().icon}`,
+                }
+                schools.push(school);
+            });
+        });
+    }
+
+    var origin = document.getElementById('origin');
+    var destination = document.getElementById('destination')
+
+    // Add listeners 
+    origin.addEventListener('focus', () => {
+        origin.classList.add("focused");
+        // document.getElementById('overlay').style.display = "block";
+    });
+    destination.addEventListener('focus', () => {
+        destination.classList.add("focused");
+        // document.getElementById('overlay').style.display = "block";
+    });
+
+    // create markers for the map
+    function makeMarkers(school) {
+        geocoder.geocode({ 'address': school.address }, function (results, status) {
+            var marker = new google.maps.Marker({
+                position: results[0].geometry.location,
+                map: map,
+                title: school.name,
+                address: school.address,
+            });
+            var contentString = '<h4 style="margin: 0px;">' + marker.title + '</h4> <div><button>Origin</button><button>Destination</button></div>';
+            marker.addListener('mouseover', function () {
+                var infowindow = new google.maps.InfoWindow({
+                    content: contentString
+                });
+                infowindow.open(map, marker);
+                marker.addListener('mouseout', function () {
+                    infowindow.close(map, marker);
+                }, { passive: true })
+            }, { passive: true });
+
+            // add listener on the markers to see if they're being selected for directions
+            marker.addListener('click', function () {
+                // Selecting an origin school
+                if (origin.classList.contains("focused")) {
+                    document.getElementById('originLabel').innerHTML = "Origin - <b>" + marker.title + "</b>";
+                    origin.value = marker.address;
+                    // document.getElementById('overlay').style.display = "none";
+                    origin.classList.remove('focused');
+                }
+                // Selecting a destination school
+                if (destination.classList.contains("focused")) {
+                    document.getElementById('destinationLabel').innerHTML = "Destination - <b>" + marker.title + "</b>";
+                    destination.value = marker.address;
+                    // document.getElementById('overlay').style.display = "none";
+                    destination.classList.remove('focused');
+                }
+            });
+        });
+
+    }
+
+    function distance() {
+        route.route(
+            {
+                origin: origin.value,
+                destination: destination.value,
+                travelMode: 'DRIVING',
+                unitSystem: google.maps.UnitSystem.IMPERIAL,
+                avoidFerries: true,
+                avoidHighways: false,
+                avoidTolls: false,
+            }, callback);
+
+        function callback(response, status) {
+            if (status == 'OK') {
+                routeDisplay.setDirections(response);
+                document.getElementById('driveTime').innerHTML = '<h3>Drive Time: ' + response.routes[0].legs[0].duration.text;
+            }
+        }
+        // var service = new google.maps.DistanceMatrixService();
+        // service.getDistanceMatrix(
+        //     {
+        //         origins: [origin.value],
+        //         destinations: [destination.value],
+        //         travelMode: 'DRIVING',
+        //         unitSystem: google.maps.UnitSystem.IMPERIAL,
+        //         avoidHighways: false,
+        //         avoidTolls: false,
+        //     }, callback);
+
+        // function callback(response, status) {
+        //     document.getElementById('driveTime').innerHTML = '<h3>Drive Time: ' + response.rows[0].elements[0].duration.text;
+        // }
+    }
+</script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDEsiF-4rP-8HjkTzpnNl_7hLu-wG-qdHQ&callback=initMap" async
+    defer></script>
